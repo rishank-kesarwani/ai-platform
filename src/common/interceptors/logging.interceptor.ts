@@ -24,6 +24,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const applicationId = body?.applicationId || req.headers[HEADERS.APPLICATION_ID] || 'n/a';
     const tenantId = body?.tenantId || req.headers[HEADERS.TENANT_ID] || 'n/a';
     const userId = body?.userId || req.headers[HEADERS.USER_ID] || 'anonymous';
+    const authenticatedService = req.authContext?.service || 'unauthenticated';
 
     const now = Date.now();
 
@@ -38,6 +39,7 @@ export class LoggingInterceptor implements NestInterceptor {
             applicationId,
             tenantId,
             userId,
+            authenticatedService,
             latencyMs,
             statusCode: res.statusCode,
             cacheHit: data?.cached ?? false,
@@ -51,6 +53,7 @@ export class LoggingInterceptor implements NestInterceptor {
             applicationId,
             tenantId,
             userId,
+            authenticatedService,
             latencyMs,
             error: err.name || 'Error',
           });

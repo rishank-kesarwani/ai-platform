@@ -387,7 +387,7 @@ The platform enforces multi-tenancy at every layer:
 
 - **Helmet**: Secures HTTP headers.
 - **CORS**: Configurable cross-origin resource sharing.
-- **Service Authentication**: Guard validates `x-api-key` against configured authorized keys.
+- **Service Authentication**: `ServiceAuthGuard` validates application-specific API keys (`AI_PLATFORM_TRAVEL_API_KEY`, `AI_PLATFORM_MOVIE_API_KEY`, `AI_PLATFORM_SPORTS_API_KEY`, `AI_PLATFORM_STUDY_API_KEY`, plus legacy fallback) using constant-time comparison (`crypto.timingSafeEqual`).
 - **Credential Protection**: Zero credentials in code, logs, or client responses.
 - **Sanitized Exception Filter**: Redacts internal stack traces and prompt structures.
 - **Rate Limiting**: IP and service key throttling via `@nestjs/throttler`.
@@ -396,13 +396,22 @@ The platform enforces multi-tenancy at every layer:
 
 ## 16. Authentication
 
-Client application backends authenticate end-users, then call the AI Platform using the `x-api-key` header.
+Client application backends authenticate end-users, then call the AI Platform using the `x-api-key` header (or `Authorization: Bearer <key>`) with their designated application credential.
+
+### Application Credentials
+| Application | Environment Variable | Service Identifier |
+|---|---|---|
+| `ai-travel-planner` | `AI_PLATFORM_TRAVEL_API_KEY` | `travel` |
+| `ai-movie-matcher` | `AI_PLATFORM_MOVIE_API_KEY` | `movie` |
+| `ai-sports-tracker` | `AI_PLATFORM_SPORTS_API_KEY` | `sports` |
+| `ai-study-spot-finder` | `AI_PLATFORM_STUDY_API_KEY` | `study` |
+| *Legacy Fallback* | `AI_SERVICE_API_KEY` | `legacy-fallback` |
 
 ```http
 POST /api/v1/ai/chat HTTP/1.1
 Host: ai-platform.local
 Content-Type: application/json
-x-api-key: your-service-api-key
+x-api-key: your-application-specific-key
 x-correlation-id: 7f3b610c-967a-4284-95da-78c77eb05943
 
 {
@@ -490,8 +499,12 @@ curl http://localhost:4000/health/ready
 | `PORT` | `4000` | Application HTTP port |
 | `API_PREFIX` | `api/v1` | Global API prefix |
 | `LOG_LEVEL` | `info` | Pino log level |
-| `AI_SERVICE_API_KEY` | `test-service-api-key-12345` | Comma-separated authorized service API keys |
-| `MONGODB_URI` | `mongodb://...` | MongoDB connection connection string |
+| `AI_PLATFORM_TRAVEL_API_KEY` | (optional) | Credential for ai-travel-planner |
+| `AI_PLATFORM_MOVIE_API_KEY` | (optional) | Credential for ai-movie-matcher |
+| `AI_PLATFORM_SPORTS_API_KEY` | (optional) | Credential for ai-sports-tracker |
+| `AI_PLATFORM_STUDY_API_KEY` | (optional) | Credential for ai-study-spot-finder |
+| `AI_SERVICE_API_KEY` | (optional) | Comma-separated legacy fallback service API keys |
+| `MONGODB_URI` | `mongodb://...` | MongoDB connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant REST URL |
 | `QDRANT_API_KEY` | (empty) | Qdrant API Key (if cloud-hosted) |

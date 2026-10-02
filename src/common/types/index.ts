@@ -1,6 +1,6 @@
 export interface ServiceAuthContext {
   authenticated: boolean;
-  apiKey: string;
+  service?: string;
 }
 
 export interface SecurityContext {

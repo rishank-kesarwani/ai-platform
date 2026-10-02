@@ -34,7 +34,23 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  AI_SERVICE_API_KEY: string = 'test-service-api-key-12345';
+  AI_PLATFORM_TRAVEL_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  AI_PLATFORM_MOVIE_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  AI_PLATFORM_SPORTS_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  AI_PLATFORM_STUDY_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  AI_SERVICE_API_KEY?: string;
 
   @IsString()
   @IsOptional()
@@ -116,5 +132,28 @@ export function validate(config: Record<string, unknown>) {
   if (errors.length > 0) {
     throw new Error(`Config validation error: ${errors.toString()}`);
   }
+
+  // Production check: Fail fast if no valid service authentication keys are configured
+  if (validatedConfig.NODE_ENV === Environment.Production) {
+    const hasAnyAppKey = Object.entries(config).some(([key, val]) => {
+      return (
+        /^AI_PLATFORM_([A-Z0-9_]+)_API_KEY$/i.test(key) &&
+        typeof val === 'string' &&
+        val.trim().length > 0
+      );
+    });
+
+    const hasFallbackKey = Boolean(
+      validatedConfig.AI_SERVICE_API_KEY && validatedConfig.AI_SERVICE_API_KEY.trim()
+    );
+
+    if (!hasAnyAppKey && !hasFallbackKey) {
+      throw new Error(
+        'Production configuration error: No valid service authentication keys configured. Set at least one AI_PLATFORM_<APP>_API_KEY or AI_SERVICE_API_KEY.',
+      );
+    }
+  }
+
   return validatedConfig;
 }
+
