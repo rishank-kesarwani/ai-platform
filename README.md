@@ -131,35 +131,35 @@ This platform consolidates all AI capabilities into a single, scalable, audited,
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer [Consumer Applications]
-        App1[ai-travel-planner]
-        App2[movie-night-matcher]
-        App3[personal-finance-dashboard]
+    subgraph ClientLayer ["Consumer Applications"]
+        App1["ai-travel-planner"]
+        App2["movie-night-matcher"]
+        App3["personal-finance-dashboard"]
     end
 
-    subgraph AppBackends [App Backend Gateways]
-        Backend[App Backend Server\nAuthenticates User]
+    subgraph AppBackends ["App Backend Gateways"]
+        Backend["App Backend Server<br/>(Authenticates End User)"]
     end
 
-    subgraph AIPlatform [AI Platform Service]
-        AuthGuard[ServiceAuthGuard & RateLimiter]
-        ChatController[Chat & Streaming Controllers]
-        RagController[RAG Controller]
-        AgentController[LangGraph Agent Controller]
+    subgraph AIPlatform ["AI Platform Service"]
+        AuthGuard["ServiceAuthGuard & RateLimiter<br/>(App-Specific API Keys)"]
+        ChatController["Chat & Streaming Controllers"]
+        RagController["RAG Controller"]
+        AgentController["LangGraph Agent Controller"]
         
-        CacheService[(Redis Cache & Locks)]
-        QueueService[BullMQ Queues\n- rag-ingestion\n- embedding\n- memory]
+        CacheService[("Redis Cache & Locks<br/>(ai:response, distributed locks)")]
+        QueueService["BullMQ Queues<br/>(rag-ingestion, embedding, memory)"]
         
-        RagEngine[RAG Retrieval & Ingestion Engine]
-        LangGraphEngine[LangGraph State Workflow]
-        MemoryEngine[Conversation & User Memory]
+        RagEngine["RAG Ingestion & Multi-Tenant Retrieval"]
+        LangGraphEngine["LangGraph State Workflow Engine"]
+        MemoryEngine["Conversation & User Memory Service"]
     end
 
-    subgraph ExternalServices [External Providers & Storage]
-        GeminiLLM[Google Gemini LLM]
-        GeminiEmbed[Google Gemini Embeddings]
-        QdrantDB[(Qdrant Vector DB)]
-        MongoDB[(MongoDB Document DB)]
+    subgraph ExternalServices ["External Providers & Data Stores"]
+        GeminiLLM["Google Gemini LLM<br/>(gemini-1.5-flash)"]
+        GeminiEmbed["Google Gemini Embeddings<br/>(text-embedding-004)"]
+        QdrantDB[("Qdrant Vector DB<br/>(768-dim, Cosine)")]
+        MongoDB[("MongoDB Document DB<br/>(Documents, Chunks, Executions)")]
     end
 
     App1 --> Backend
@@ -196,37 +196,118 @@ flowchart TD
 ## 5. RAG Architecture
 
 The Retrieval-Augmented Generation (RAG) architecture is decoupled into two distinct pipelines:
-1. **Asynchronous Ingestion Pipeline**: Handles document normalization, chunking, embedding generation, vector indexing, and metadata persistence via BullMQ.
-2. **Synchronous Query Pipeline**: Executes query embedding, metadata-filtered vector search with tenant/user isolation, context formatting, and citation generation.
+1. **Asynchronous Ingestion Pipeline**: Handles document normalization, recursive chunking, batch embedding generation, stale version invalidation, vector indexing, and metadata persistence via BullMQ.
+2. **Synchronous Query Pipeline**: Executes query embedding, multi-tenant filtered vector search with tenant/user isolation, context formatting, and citation generation.
 
 ---
 
 ## 6. RAG Ingestion Flow
 
+The ingestion pipeline is designed for **high throughput, idempotency, and zero client blocking**. Client requests receive an immediate `202 Accepted` acknowledgement while document chunking, embedding, and vector indexing happen asynchronously with automatic retries.
+
+### 6.1 Ingestion Pipeline Architecture
+
+```mermaid
+flowchart TD
+    subgraph Ingress ["1. Fast Ingress & Staging"]
+        ClientReq["Client POST /api/v1/rag/documents<br/>(docId, title, content, metadata)"]
+        RagCtrl["RagController & IngestionService"]
+        MongoStage[("MongoDB: ai_documents<br/>Save Metadata, Version N+1<br/>Status: queued")]
+        BullQueue["BullMQ: rag-ingestion Queue<br/>Job ID: rag:app:tenant:doc:vN"]
+        Ack["Return 202 Accepted<br/>{ documentId, status: 'queued', version: N }"]
+    end
+
+    subgraph WorkerProcess ["2. Asynchronous Worker Processing"]
+        Worker["RagIngestionProcessor (BullMQ Worker)"]
+        MongoProc[("MongoDB: ai_documents<br/>Update Status: processing")]
+        Chunker["RecursiveCharacterChunker<br/>(Chunk Size: 800, Overlap: 150)"]
+        Chunks["Deterministic Chunk List<br/>chunkId: app:tenant:doc:vN:index"]
+    end
+
+    subgraph EmbeddingGen ["3. Batch Vector Embedding"]
+        GeminiService["GeminiEmbeddingService"]
+        GeminiAPI["Google Gemini API<br/>(text-embedding-004, 768-dim)"]
+        Vectors["Generated 768-dim Vectors"]
+    end
+
+    subgraph AtomicIndexing ["4. Atomic Indexing & Version Cleanup"]
+        QdrantPurge["Qdrant: Delete Prior Version Chunks<br/>(docId = X AND version &lt; N)"]
+        QdrantUpsert["Qdrant: Upsert New Vector Points<br/>(Payload: app, tenant, user, text, meta)"]
+        MongoChunks[("MongoDB: ai_chunks<br/>Purge Old Chunks & Insert New Chunks")]
+        MongoFinal[("MongoDB: ai_documents<br/>Status: indexed, chunkCount: K")]
+    end
+
+    ClientReq --> RagCtrl
+    RagCtrl --> MongoStage
+    RagCtrl --> BullQueue
+    RagCtrl --> Ack
+
+    BullQueue --> Worker
+    Worker --> MongoProc
+    Worker --> Chunker
+    Chunker --> Chunks
+    Chunks --> GeminiService
+    GeminiService --> GeminiAPI
+    GeminiAPI --> Vectors
+
+    Vectors --> QdrantPurge
+    QdrantPurge --> QdrantUpsert
+    QdrantUpsert --> MongoChunks
+    MongoChunks --> MongoFinal
+```
+
+### 6.2 Detailed Sequence Diagram
+
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AppBackend as Application Backend
-    participant RagCtrl as RAG Controller
-    participant Mongo as MongoDB (ai_documents)
-    participant Queue as BullMQ (rag-ingestion)
-    participant Worker as Ingestion Processor
-    participant Chunker as Recursive Chunker
-    participant Embed as Gemini Embeddings
-    participant Qdrant as Qdrant Vector Store
+    actor App as Consumer Application
+    participant Ctrl as RAG Controller
+    participant Mongo as MongoDB
+    participant Queue as BullMQ Queue
+    participant Worker as Ingestion Worker
+    participant Chunker as Text Chunker
+    participant Gemini as Gemini Embeddings
+    participant Qdrant as Qdrant Vector DB
 
-    AppBackend->>RagCtrl: POST /api/v1/rag/documents (Doc Payload)
-    RagCtrl->>Mongo: Store/Update Document Metadata (version N, status="queued")
-    RagCtrl->>Queue: Add Job rag:{appId}:{tenantId}:{docId}:v{N}
-    RagCtrl-->>AppBackend: 202 Accepted { documentId, status: "queued", version: N }
+    Note over App,Queue: Stage 1: Fast Ingestion Request & Job Staging
+    App->>Ctrl: POST /api/v1/rag/documents (Doc Payload)
+    Ctrl->>Mongo: Upsert ai_documents (version = N+1, status = "queued")
+    Mongo-->>Ctrl: Document Staged
+    Ctrl->>Queue: Add Job (ID: rag:appId:tenantId:docId:vN)
+    Ctrl-->>App: 202 Accepted { documentId, status: "queued", version: N }
 
-    Queue->>Worker: Pick Job
-    Worker->>Mongo: Update status="processing"
-    Worker->>Chunker: Split Content into Chunks (size=800, overlap=150)
-    Worker->>Embed: Generate Batch Embeddings (768-dim)
-    Worker->>Qdrant: Invalidate Stale Chunks (v < N) & Upsert New Points
-    Worker->>Mongo: Store ai_chunks & Update ai_document (status="indexed", chunkCount)
+    Note over Queue,Qdrant: Stage 2: Asynchronous Chunking & Batch Embedding
+    Queue->>Worker: Consume Ingestion Job
+    Worker->>Mongo: Update ai_documents (status = "processing")
+    Worker->>Chunker: Split Content (chunkSize=800, overlap=150)
+    Chunker-->>Worker: Return Chunks with Deterministic IDs
+    Worker->>Gemini: Request Batch Embeddings (Batch size = 20)
+    Gemini-->>Worker: Return 768-dim Embeddings
+
+    Note over Worker,Qdrant: Stage 3: Atomic Storage & Stale Chunk Invalidation
+    alt If Document Version > 1
+        Worker->>Qdrant: Delete Previous Version Points (version < N)
+        Worker->>Mongo: Delete Previous Version Chunks from ai_chunks
+    end
+    Worker->>Qdrant: Upsert New Vector Points + Filter Metadata
+    Qdrant-->>Worker: Points Indexed
+    Worker->>Mongo: Insert New Records into ai_chunks
+    Worker->>Mongo: Update ai_documents (status = "indexed", chunkCount)
+    Worker-->>Queue: Job Completed Successfully
 ```
+
+### 6.3 Ingestion Lifecycle Breakdown
+
+| Stage | Action | Description |
+|---|---|---|
+| **1. Validation & Staging** | Controller & MongoDB | Validates payload, increments document version, stores document in `ai_documents` with `status: "queued"`. |
+| **2. Idempotent Enqueuing** | BullMQ | Creates a job with deterministic ID `rag:{appId}:{tenantId}:{docId}:v{version}` with 3 automatic exponential retries. |
+| **3. Recursive Chunking** | `RecursiveCharacterChunker` | Normalizes text and creates chunks bounded by `RAG_CHUNK_SIZE` (800 chars) with `RAG_CHUNK_OVERLAP` (150 chars). |
+| **4. Batch Embedding** | Gemini API | Embeds chunks in batches of 20 using `text-embedding-004` to minimize latency. |
+| **5. Stale Version Purge** | Qdrant & MongoDB | Atomically purges prior version chunks (`version < N`) to prevent duplicate or stale search results. |
+| **6. Vector & Chunk Storage** | Qdrant & MongoDB | Upserts 768-dim vector points with multi-tenant payload filters into Qdrant and saves chunk entities to `ai_chunks`. |
+| **7. Final Confirmation** | MongoDB | Updates document record with `status: "indexed"` and total chunk count. |
 
 ---
 
@@ -235,21 +316,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Client as Consumer Backend
-    participant ChatService as Chat / Query Service
+    actor Client as Consumer Application
+    participant Chat as Chat & Query Service
     participant Embed as Gemini Embeddings
     participant Qdrant as Qdrant Vector DB
     participant LLM as Google Gemini LLM
 
-    Client->>ChatService: POST /api/v1/ai/chat (useRag=true, query)
-    ChatService->>Embed: Embed Query Text
-    Embed-->>ChatService: Query Vector (768-dim)
-    ChatService->>Qdrant: Similarity Search (must: appId, tenantId; should: public, tenant, user)
-    Qdrant-->>ChatService: Top-K Vector Chunks + Scores + Payloads
-    ChatService->>ChatService: Assemble Context & Extract Verifiable Citations
-    ChatService->>LLM: Generate Answer with Augmented Prompt & System Instructions
-    LLM-->>ChatService: Generated Response Content + Token Usage
-    ChatService-->>Client: { answer, citations: [{ documentId, source, chunkId, score }], usage, latencyMs }
+    Client->>Chat: POST /api/v1/ai/chat (useRag=true, query)
+    Chat->>Embed: Embed Query String
+    Embed-->>Chat: 768-dim Query Vector
+    Chat->>Qdrant: Filtered Vector Search (appId, tenantId, userId, scoreThreshold)
+    Qdrant-->>Chat: Return Top-K Ranked Chunks + Payloads + Scores
+    Chat->>Chat: Format Grounded Context Snippets & Extract Verifiable Citations
+    Chat->>LLM: Generate Answer with System Prompt & Context
+    LLM-->>Chat: Answer Text + Token Usage
+    Chat-->>Client: { answer, citations: [{ documentId, source, chunkId, score }], usage, latencyMs }
 ```
 
 ---
