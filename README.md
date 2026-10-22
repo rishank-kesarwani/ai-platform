@@ -7,59 +7,63 @@
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
-2. [Why This Service Exists](#2-why-this-service-exists)
-3. [Architecture](#3-architecture)
-4. [Architecture Diagram](#4-architecture-diagram)
-5. [RAG Architecture](#5-rag-architecture)
-6. [RAG Ingestion Flow](#6-rag-ingestion-flow)
-7. [RAG Query Flow](#7-rag-query-flow)
-8. [LangChain Architecture](#8-langchain-architecture)
-9. [LangGraph Architecture](#9-langgraph-architecture)
-10. [Redis Architecture](#10-redis-architecture)
-11. [BullMQ Architecture](#11-bullmq-architecture)
-12. [MongoDB Schema](#12-mongodb-schema)
-13. [Qdrant Schema](#13-qdrant-schema)
-14. [Multi-Tenancy & Isolation](#14-multi-tenancy--isolation)
-15. [Security](#15-security)
-16. [Authentication](#16-authentication)
-17. [API Documentation](#17-api-documentation)
-18. [Local Setup](#18-local-setup)
-19. [Docker Setup](#19-docker-setup)
-20. [Environment Variables](#20-environment-variables)
-21. [Gemini Setup](#21-gemini-setup)
-22. [Qdrant Setup](#22-qdrant-setup)
-23. [Redis Setup](#23-redis-setup)
-24. [Testing](#24-testing)
-25. [CI/CD Pipeline](#25-cicd-pipeline)
-26. [Production Deployment](#26-production-deployment)
-27. [Performance Considerations](#27-performance-considerations)
-28. [Caching Strategy](#28-caching-strategy)
-29. [Retry Strategy](#29-retry-strategy)
-30. [Failure Scenarios & Resilience](#30-failure-scenarios--resilience)
-31. [Observability & Telemetry](#31-observability--telemetry)
-32. [RAG Evaluation Framework](#32-rag-evaluation-framework)
-33. [Cost Considerations](#33-cost-considerations)
-34. [Future Improvements](#34-future-improvements)
+2. [Application Ecosystem & Portfolio Integrations](#2-application-ecosystem--portfolio-integrations)
+3. [Why This Service Exists](#3-why-this-service-exists)
+4. [Architecture](#4-architecture)
+5. [Architecture Diagram](#5-architecture-diagram)
+6. [RAG Architecture](#6-rag-architecture)
+7. [RAG Ingestion Flow](#7-rag-ingestion-flow)
+8. [RAG Query Flow](#8-rag-query-flow)
+9. [LangChain Architecture](#9-langchain-architecture)
+10. [LangGraph Architecture](#10-langgraph-architecture)
+11. [Redis Architecture](#11-redis-architecture)
+12. [BullMQ Architecture](#12-bullmq-architecture)
+13. [MongoDB Schema](#13-mongodb-schema)
+14. [Qdrant Schema](#14-qdrant-schema)
+15. [Multi-Tenancy & Isolation](#15-multi-tenancy--isolation)
+16. [Security](#16-security)
+17. [Authentication](#17-authentication)
+18. [API Documentation](#18-api-documentation)
+19. [Local Setup](#19-local-setup)
+20. [Docker Setup](#20-docker-setup)
+21. [Environment Variables](#21-environment-variables)
+22. [Gemini Setup](#22-gemini-setup)
+23. [Qdrant Setup](#23-qdrant-setup)
+24. [Redis Setup](#24-redis-setup)
+25. [Testing](#25-testing)
+26. [CI/CD Pipeline](#26-cicd-pipeline)
+27. [Production Deployment](#27-production-deployment)
+28. [Performance Considerations](#28-performance-considerations)
+29. [Caching Strategy](#29-caching-strategy)
+30. [Retry Strategy](#30-retry-strategy)
+31. [Failure Scenarios & Resilience](#31-failure-scenarios--resilience)
+32. [Observability & Telemetry](#32-observability--telemetry)
+33. [RAG Evaluation Framework](#33-rag-evaluation-framework)
+34. [Cost Considerations](#34-cost-considerations)
+35. [Future Improvements](#35-future-improvements)
 
 ---
 
 ## 1. Project Overview
 
-`portfolio-ai-platform` is a centralized, high-performance AI backend designed to serve multiple independent consumer applications across diverse domains:
+`portfolio-ai-platform` is a centralized, high-performance AI infrastructure service designed to power a portfolio of specialized consumer-facing and engineering AI applications:
 
-1. **ai-travel-planner** (Itineraries, hotel recommendations, packing guides)
-2. **movie-night-matcher** (Movie suggestions, preferences, reviews)
-3. **live-sports-tracker** (Game summaries, player stats, commentary analysis)
-4. **campus-study-spot-finder** (Library guides, quiet zones, coffee spots)
-5. **habit-garden-tracker** (Habit coaching, accountability reflections)
-6. **concert-festival-finder** (Festival lineups, ticketing policies, travel logistics)
-7. **coffee-shop-finder** (Wifi ratings, work-friendly cafe indexes)
-8. **hiking-trail-explorer** (Trail conditions, gear recommendations, safety alerts)
-9. **personal-finance-dashboard** (Expense analysis, budget categorization)
+1. **ai-travel-planner** (Itinerary generation, destination recommendations, and budget planning)
+2. **ai-movie-matcher** (Conversational movie discovery, mood-based matching, and semantic recommendation)
+3. **ai-sports-tracker** (Real-time game intelligence, odds analysis, and match commentary)
+4. **ai-study-spot-finder** (Study location discovery, noise level analysis, and study concierge)
+5. **ai-hiking-explorer** (Trail discovery, difficulty ratings, terrain advice, and hiking concierge)
+6. **ai-pipeline-observability** (Multi-agent AI pipeline telemetry, trace diagnostics, and automated root-cause analysis)
+7. **ai-model-regression-detection** (LLM evaluation, prompt regression testing, and output drift scoring)
+8. **ai-pr-review-platform** (Automated GitHub PR code analysis, security auditing, and quality reviews)
+9. **ai-cost-routing-autopilot** (Multi-provider model routing, budget enforcement, and cost optimization)
+10. **ai-output-arbitration** (Multi-model consensus evaluation, hallucination detection, and factual arbitration)
+11. **ai-rag-quality-ops** (Vector search retrieval quality benchmarking, latency monitoring, and RAG metric operationalization)
+12. **ai-prompt-experiment-manager** (Prompt engineering experimentation, A/B variant testing, and prompt version control)
 
 The platform is **application-agnostic**. It contains **zero** domain-specific business logic. Instead, client backend services supply their context (`applicationId`, `tenantId`, `userId`, documents, tools, prompts) while the platform provides unified AI infrastructure:
-- LLM inference & streaming (Google Gemini)
-- Embedding generation (Gemini Embeddings)
+- LLM inference & streaming (Google Gemini `gemini-1.5-flash` / `gemini-1.5-pro`)
+- Embedding generation (Gemini Embeddings `text-embedding-004`)
 - Production RAG pipeline with strict multi-tenant vector retrieval (Qdrant)
 - Agent workflow execution with LangGraph state graphs
 - Multi-tier memory (sliding conversation windows + structured long-term user memories)
@@ -69,7 +73,41 @@ The platform is **application-agnostic**. It contains **zero** domain-specific b
 
 ---
 
-## 2. Why This Service Exists
+## 2. Application Ecosystem & Portfolio Integrations
+
+The AI Platform sits at the center of a decoupled multi-application architecture. Rather than having each domain application maintain its own vector database, embedding pipeline, Redis lock coordination, and LLM retry policies, client applications communicate with `ai-platform` via authenticated service-to-service REST and SSE endpoints.
+
+### 2.1 Verified AI Platform Consumer Applications
+
+The following applications have verified backend implementations actively consuming the shared AI Platform:
+
+| Application | Purpose | Live Demo | Source Code | AI Platform Integration |
+|---|---|---|---|---|
+| **AI Travel Planner** | AI-assisted trip planning, itinerary synthesis, and destination guides | [Live Demo](https://travel-planner.rishankkesharwani.com/plan-trip) | [GitHub](https://github.com/rishank-kesarwani/ai-travel-planner) | **Verified Consumer**: Backend `AiPlatformClient` connects to `/api/v1/ai/chat` for conversational trip planning and dispatches travel guide vectors via BullMQ trip-indexing processors. |
+| **AI Movie Matcher** | Movie discovery, mood-based matching, and semantic recommendation | [Live Demo](https://movie-matcher.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-movie-matcher) | **Verified Consumer**: Consumes `/api/v1/ai/chat` and embedding services via backend `AiPlatformClient` for personalized movie matching. |
+| **AI Sports Tracker** | Real-time game intelligence, odds analysis, and match summaries | [Live Demo](https://sports-tracker.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-sports-tracker) | **Verified Consumer**: Consumes chat endpoints via backend `AiPlatformClient` with circuit-breaker protection for automated game summaries. |
+| **AI Study Spot Finder** | Campus and city study location discovery, amenity filtering, and noise analysis | [Live Demo](https://study-spot-finder.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-study-spot-finder) | **Verified Consumer**: Integrates via `AiStudyConciergeService` and `AiPlatformClient` for conversational study spot recommendations. |
+| **AI Hiking Explorer** | Hiking trail discovery, elevation/terrain analysis, and trail advice | [Live Demo](https://hiking-explorer.rishankkesharwani.com/nearby) | [GitHub](https://github.com/rishank-kesarwani/ai-hiking-explorer) | **Verified Consumer**: Calls AI Platform via `AiPlatformClient` using `AI_PLATFORM_HIKING_API_KEY` for trail recommendations, with local heuristic engine fallback. |
+| **AI Pipeline Observability** | Multi-agent AI pipeline telemetry, trace diagnostics, and automated root-cause analysis | [Live Demo](https://pipeline-observability.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-pipeline-observability) | **Verified Consumer**: Transmits failed workflow traces to `/api/v1/ai/chat` using `AI_PLATFORM_OBSERVABILITY_API_KEY` for LLM-powered incident diagnostics. |
+| **AI Model Regression Detection** | LLM evaluation, prompt regression testing, output drift detection, and benchmark scoring | [Live Demo](https://model-regression.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-model-regression-detection) | **Verified Consumer**: Routes benchmark evaluation requests to the shared platform via `AI_PLATFORM_MODEL_REGRESSION_API_KEY`. |
+| **AI PR Review** | Automated GitHub pull request code review, security scanning, and anti-pattern analysis | [Live Demo](https://ai-pr-review.rishankkesharwani.com/reviews) | [GitHub](https://github.com/rishank-kesarwani/ai-pr-review-platform) | **Verified Consumer**: Orchestrator calls `AiPlatformService` via `AI_PLATFORM_PR_REVIEW_API_KEY` to generate structured code review findings with Gemini fallback. |
+| **AI Cost Routing Autopilot** | Multi-provider model routing, cost optimization, and budget enforcement | [Live Demo](https://ai-cost-routing-autopilot.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-cost-routing-autopilot) | **Verified Consumer**: Backend `AiPlatformClient` within `RoutingService` routes execution traffic and monitors provider health. |
+| **AI Output Arbitration** | Multi-model consensus evaluation, hallucination detection, and factual arbitration | [Live Demo](https://ai-output-arbitration.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-output-arbitration) | **Verified Consumer**: Backend `AiPlatformClient` dispatches judge evaluations to `/ai/chat` to compare candidate outputs against evidence context. |
+| **AI RAG Quality Ops** | Vector search quality benchmarking, retrieval latency monitoring, and RAG metric operationalization | [Live Demo](https://ai-rag-quality-ops.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-rag-quality-ops) | **Verified Consumer**: Backend `AiPlatformClient` dispatches live RAG queries to `/api/v1/rag/query` to evaluate retrieval precision and citation faithfulness. |
+| **AI Prompt Experiment Manager** | Prompt engineering experimentation, A/B variant testing, and prompt version control | [Live Demo](https://prompt-experiment.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-prompt-experiment-manager) | **Verified Consumer**: Backend `AiPlatformClient` dispatches prompt execution runs to `/api/v1/ai/chat` to benchmark prompt variations across model parameters. |
+
+### 2.2 Broader Portfolio Ecosystem (Independent / Companion Services)
+
+The portfolio includes additional live services that operate alongside the platform:
+
+| Application / Service | Purpose | Live Demo | Source Code | Relationship to AI Platform |
+|---|---|---|---|---|
+| **AI Document Intelligence** | Multi-format document parsing, OCR extraction, and structured information workflows | [Live Demo](https://document-intelligence.rishankkesharwani.com/) | [GitHub](https://github.com/rishank-kesarwani/ai-document-intelligence) | **Independent / Non-Consumer**: Evaluates environment configuration for `AI_PLATFORM_API_KEY` to surface modality limitations in health checks, but executes primary document extraction locally via embedded PDF and OCR tools without dispatching active HTTP requests to the platform. |
+| **Notification Service** | Shared notification backend supporting email and push channels with queueing and circuit breakers | N/A (Internal API) | [GitHub](https://github.com/rishank-kesarwani/notification-service) | **Companion Service**: Provides asynchronous delivery infrastructure (email, FCM push) consumed by portfolio applications in coordination with AI Platform workflows. |
+
+---
+
+## 3. Why This Service Exists
 
 When building multiple AI-driven applications, engineering teams frequently duplicate foundational AI plumbing:
 - Fragmented vector database connections and non-standardized chunking.
@@ -81,7 +119,7 @@ This platform consolidates all AI capabilities into a single, scalable, audited,
 
 ---
 
-## 3. Architecture
+## 4. Architecture
 
 ```
 +-------------------------------------------------------------+
@@ -127,14 +165,16 @@ This platform consolidates all AI capabilities into a single, scalable, audited,
 
 ---
 
-## 4. Architecture Diagram
+## 5. Architecture Diagram
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer ["Consumer Applications"]
-        App1["ai-travel-planner"]
-        App2["movie-night-matcher"]
-        App3["personal-finance-dashboard"]
+    subgraph ClientLayer ["Consumer Applications & Systems"]
+        App1["AI Travel Planner<br/>(Itineraries & Concierge)"]
+        App2["AI Movie Matcher<br/>(Discovery & Recommendations)"]
+        App3["AI Sports Tracker<br/>(Game Intelligence)"]
+        App4["AI PR Review & Observability<br/>(Engineering Automation)"]
+        App5["AI RAG Quality Ops & Arbitration<br/>(Evaluation & Arbitration)"]
     end
 
     subgraph AppBackends ["App Backend Gateways"]
@@ -148,7 +188,7 @@ flowchart TD
         AgentController["LangGraph Agent Controller"]
         
         CacheService[("Redis Cache & Locks<br/>(ai:response, distributed locks)")]
-        QueueService["BullMQ Queues<br/>(rag-ingestion, embedding, memory)"]
+        QueueService["BullMQ Queues<br/>(rag-ingestion)"]
         
         RagEngine["RAG Ingestion & Multi-Tenant Retrieval"]
         LangGraphEngine["LangGraph State Workflow Engine"]
@@ -165,6 +205,8 @@ flowchart TD
     App1 --> Backend
     App2 --> Backend
     App3 --> Backend
+    App4 --> Backend
+    App5 --> Backend
 
     Backend -->|x-api-key| AuthGuard
     AuthGuard --> ChatController
@@ -193,7 +235,7 @@ flowchart TD
 
 ---
 
-## 5. RAG Architecture
+## 6. RAG Architecture
 
 The Retrieval-Augmented Generation (RAG) architecture is decoupled into two distinct pipelines:
 1. **Asynchronous Ingestion Pipeline**: Handles document normalization, recursive chunking, batch embedding generation, stale version invalidation, vector indexing, and metadata persistence via BullMQ.
@@ -201,11 +243,11 @@ The Retrieval-Augmented Generation (RAG) architecture is decoupled into two dist
 
 ---
 
-## 6. RAG Ingestion Flow
+## 7. RAG Ingestion Flow
 
 The ingestion pipeline is designed for **high throughput, idempotency, and zero client blocking**. Client requests receive an immediate `202 Accepted` acknowledgement while document chunking, embedding, and vector indexing happen asynchronously with automatic retries.
 
-### 6.1 Ingestion Pipeline Architecture
+### 7.1 Ingestion Pipeline Architecture
 
 ```mermaid
 flowchart TD
@@ -256,7 +298,7 @@ flowchart TD
     MongoChunks --> MongoFinal
 ```
 
-### 6.2 Detailed Sequence Diagram
+### 7.2 Detailed Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -297,7 +339,7 @@ sequenceDiagram
     Worker-->>Queue: Job Completed Successfully
 ```
 
-### 6.3 Ingestion Lifecycle Breakdown
+### 7.3 Ingestion Lifecycle Breakdown
 
 | Stage | Action | Description |
 |---|---|---|
@@ -311,7 +353,7 @@ sequenceDiagram
 
 ---
 
-## 7. RAG Query Flow
+## 8. RAG Query Flow
 
 ```mermaid
 sequenceDiagram
@@ -335,7 +377,7 @@ sequenceDiagram
 
 ---
 
-## 8. LangChain Architecture
+## 9. LangChain Architecture
 
 LangChain JS is leveraged for:
 - Standardized message abstraction (`HumanMessage`, `AIMessage`, `SystemMessage`).
@@ -345,7 +387,7 @@ LangChain JS is leveraged for:
 
 ---
 
-## 9. LangGraph Architecture
+## 10. LangGraph Architecture
 
 The agent workflow engine uses `@langchain/langgraph` to construct a state machine (`AgentState`):
 
@@ -375,7 +417,7 @@ stateDiagram-v2
 
 ---
 
-## 10. Redis Architecture
+## 11. Redis Architecture
 
 Redis is utilized as a centralized high-speed cache and coordination engine:
 - **Semantic/Response Cache**: Key schema `ai:response:{applicationId}:{tenantId}:{userId}:{hash}`.
@@ -385,7 +427,7 @@ Redis is utilized as a centralized high-speed cache and coordination engine:
 
 ---
 
-## 11. BullMQ Architecture
+## 12. BullMQ Architecture
 
 BullMQ manages asynchronous workloads across dedicated queues:
 1. `rag-ingestion`: Ingests, chunks, embeds, and indexes documents.
@@ -400,7 +442,7 @@ All jobs feature:
 
 ---
 
-## 12. MongoDB Schema
+## 13. MongoDB Schema
 
 The platform persists documents, chunks, conversations, messages, memories, prompts, and execution logs in MongoDB.
 
@@ -435,7 +477,7 @@ The platform persists documents, chunks, conversations, messages, memories, prom
 
 ---
 
-## 13. Qdrant Schema
+## 14. Qdrant Schema
 
 - **Collection Name**: `ai_platform_documents` (configurable via `QDRANT_COLLECTION`).
 - **Vector Dimension**: `768` (configurable via `EMBEDDING_DIMENSION`).
@@ -451,7 +493,7 @@ The platform persists documents, chunks, conversations, messages, memories, prom
 
 ---
 
-## 14. Multi-Tenancy & Isolation
+## 15. Multi-Tenancy & Isolation
 
 The platform enforces multi-tenancy at every layer:
 1. **Network & Ingress**: Incoming requests are validated via service-to-service credentials.
@@ -464,29 +506,43 @@ The platform enforces multi-tenancy at every layer:
 
 ---
 
-## 15. Security
+## 16. Security
 
 - **Helmet**: Secures HTTP headers.
 - **CORS**: Configurable cross-origin resource sharing.
-- **Service Authentication**: `ServiceAuthGuard` validates application-specific API keys (`AI_PLATFORM_TRAVEL_API_KEY`, `AI_PLATFORM_MOVIE_API_KEY`, `AI_PLATFORM_SPORTS_API_KEY`, `AI_PLATFORM_STUDY_API_KEY`, plus legacy fallback) using constant-time comparison (`crypto.timingSafeEqual`).
+- **Service Authentication**: `ServiceAuthGuard` validates application-specific API keys (`AI_PLATFORM_*_API_KEY` dynamic discovery, plus legacy fallback) using constant-time comparison (`crypto.timingSafeEqual`) over SHA-256 digests.
 - **Credential Protection**: Zero credentials in code, logs, or client responses.
 - **Sanitized Exception Filter**: Redacts internal stack traces and prompt structures.
 - **Rate Limiting**: IP and service key throttling via `@nestjs/throttler`.
 
 ---
 
-## 16. Authentication
+## 17. Authentication
 
 Client application backends authenticate end-users, then call the AI Platform using the `x-api-key` header (or `Authorization: Bearer <key>`) with their designated application credential.
 
+### Dynamic Service Key Discovery
+The platform automatically scans environment variables matching `AI_PLATFORM_<SERVICE>_API_KEY` and maps each key to its corresponding lowercase service identifier (e.g. `AI_PLATFORM_TRAVEL_API_KEY` &rarr; `travel`, `AI_PLATFORM_ARBITRATION_API_KEY` &rarr; `arbitration`). This enables adding new consumer applications dynamically via environment variables without requiring code changes.
+
 ### Application Credentials
-| Application | Environment Variable | Service Identifier |
-|---|---|---|
-| `ai-travel-planner` | `AI_PLATFORM_TRAVEL_API_KEY` | `travel` |
-| `ai-movie-matcher` | `AI_PLATFORM_MOVIE_API_KEY` | `movie` |
-| `ai-sports-tracker` | `AI_PLATFORM_SPORTS_API_KEY` | `sports` |
-| `ai-study-spot-finder` | `AI_PLATFORM_STUDY_API_KEY` | `study` |
-| *Legacy Fallback* | `AI_SERVICE_API_KEY` | `legacy-fallback` |
+| Application | Environment Variable | Service Identifier | Role |
+|---|---|---|---|
+| `ai-travel-planner` | `AI_PLATFORM_TRAVEL_API_KEY` | `travel` | Itinerary generation & travel concierge |
+| `ai-movie-matcher` | `AI_PLATFORM_MOVIE_API_KEY` | `movie` | Movie recommendations & semantic search |
+| `ai-sports-tracker` | `AI_PLATFORM_SPORTS_API_KEY` | `sports` | Game intelligence & match commentary |
+| `ai-study-spot-finder` | `AI_PLATFORM_STUDY_API_KEY` | `study` | Study spot concierge & amenity analysis |
+| `ai-hiking-explorer` | `AI_PLATFORM_HIKING_API_KEY` | `hiking` | Trail recommendations & route advice |
+| `ai-pipeline-observability` | `AI_PLATFORM_OBSERVABILITY_API_KEY` | `observability` | Workflow trace incident diagnostics |
+| `ai-model-regression-detection` | `AI_PLATFORM_MODEL_REGRESSION_API_KEY` | `model-regression` | Model benchmark & regression evaluation |
+| `ai-pr-review-platform` | `AI_PLATFORM_PR_REVIEW_API_KEY` | `pr-review` | Automated GitHub PR code review |
+| `ai-cost-routing-autopilot` | `AI_PLATFORM_ROUTING_API_KEY` / `AI_PLATFORM_API_KEY` | `routing` | Provider routing & model health check |
+| `ai-output-arbitration` | `AI_PLATFORM_ARBITRATION_API_KEY` / `AI_PLATFORM_API_KEY` | `arbitration` | LLM judge output arbitration |
+| `ai-rag-quality-ops` | `AI_PLATFORM_RAG_QUALITY_OPS_API_KEY` / `AI_PLATFORM_API_KEY` | `rag-quality-ops` | Vector retrieval quality benchmarking |
+| `ai-prompt-experiment-manager` | `AI_PLATFORM_PROMPT_EXPERIMENT_API_KEY` / `AI_PLATFORM_API_KEY` | `prompt-experiment` | Prompt variant evaluation & testing |
+| *Dynamic Applications* | `AI_PLATFORM_<NAME>_API_KEY` | `<name>` | Any new consumer application |
+| *Legacy Fallback* | `AI_SERVICE_API_KEY` | `legacy-fallback` | Backward-compatible shared credential |
+
+> **Security Notice**: Service API keys must be kept strictly on consumer application backends. They must **never** be shipped to browser clients or checked into source code.
 
 ```http
 POST /api/v1/ai/chat HTTP/1.1
@@ -505,7 +561,7 @@ x-correlation-id: 7f3b610c-967a-4284-95da-78c77eb05943
 
 ---
 
-## 17. API Documentation
+## 18. API Documentation
 
 Interactive Swagger documentation is available at `/docs`.
 
@@ -526,7 +582,7 @@ Interactive Swagger documentation is available at `/docs`.
 
 ---
 
-## 18. Local Setup
+## 19. Local Setup
 
 ### Prerequisites
 - Node.js `v20+` or `v22+`
@@ -555,7 +611,7 @@ Interactive Swagger documentation is available at `/docs`.
 
 ---
 
-## 19. Docker Setup
+## 20. Docker Setup
 
 To run the full stack (AI Platform + MongoDB + Redis + Qdrant) inside Docker:
 
@@ -572,7 +628,7 @@ curl http://localhost:4000/health/ready
 
 ---
 
-## 20. Environment Variables
+## 21. Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
@@ -580,10 +636,7 @@ curl http://localhost:4000/health/ready
 | `PORT` | `4000` | Application HTTP port |
 | `API_PREFIX` | `api/v1` | Global API prefix |
 | `LOG_LEVEL` | `info` | Pino log level |
-| `AI_PLATFORM_TRAVEL_API_KEY` | (optional) | Credential for ai-travel-planner |
-| `AI_PLATFORM_MOVIE_API_KEY` | (optional) | Credential for ai-movie-matcher |
-| `AI_PLATFORM_SPORTS_API_KEY` | (optional) | Credential for ai-sports-tracker |
-| `AI_PLATFORM_STUDY_API_KEY` | (optional) | Credential for ai-study-spot-finder |
+| `AI_PLATFORM_<APP>_API_KEY` | (optional) | Application-specific credentials with dynamic discovery (e.g. `AI_PLATFORM_TRAVEL_API_KEY`, `AI_PLATFORM_MOVIE_API_KEY`, `AI_PLATFORM_SPORTS_API_KEY`, `AI_PLATFORM_STUDY_API_KEY`, etc.) |
 | `AI_SERVICE_API_KEY` | (optional) | Comma-separated legacy fallback service API keys |
 | `MONGODB_URI` | `mongodb://...` | MongoDB connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
@@ -605,7 +658,7 @@ curl http://localhost:4000/health/ready
 
 ---
 
-## 21. Gemini Setup
+## 22. Gemini Setup
 
 1. Obtain an API key from Google AI Studio ([https://aistudio.google.com/](https://aistudio.google.com/)).
 2. Set `GEMINI_API_KEY` in `.env`.
@@ -613,21 +666,21 @@ curl http://localhost:4000/health/ready
 
 ---
 
-## 22. Qdrant Setup
+## 23. Qdrant Setup
 
 - Default local port: `6333` (HTTP) and `6334` (gRPC).
 - On platform startup, `QdrantVectorStoreService` automatically checks and initializes the collection and creates payload keyword indexes for multi-tenant fields.
 
 ---
 
-## 23. Redis Setup
+## 24. Redis Setup
 
 - Default local port: `6379`.
 - Used concurrently by `ioredis` for AI cache/distributed locks and by `BullMQ` for queue processing.
 
 ---
 
-## 24. Testing
+## 25. Testing
 
 ### Run Unit Tests
 ```bash
@@ -646,7 +699,7 @@ npm run test:cov
 
 ---
 
-## 25. CI/CD Pipeline
+## 26. CI/CD Pipeline
 
 The `.github/workflows/ci.yml` pipeline runs on every push and pull request:
 1. Starts MongoDB, Redis, and Qdrant container services.
@@ -658,7 +711,7 @@ The `.github/workflows/ci.yml` pipeline runs on every push and pull request:
 
 ---
 
-## 26. Production Deployment
+## 27. Production Deployment
 
 - Run using the multi-stage `Dockerfile`.
 - Set `NODE_ENV=production`.
@@ -667,7 +720,7 @@ The `.github/workflows/ci.yml` pipeline runs on every push and pull request:
 
 ---
 
-## 27. Performance Considerations
+## 28. Performance Considerations
 
 - **SSE Streaming**: Sends tokens with zero buffering for instantaneous time-to-first-token.
 - **Batch Embeddings**: Chunks are embedded in batches of 20 to minimize HTTP round-trips.
@@ -676,22 +729,22 @@ The `.github/workflows/ci.yml` pipeline runs on every push and pull request:
 
 ---
 
-## 28. Caching Strategy
+## 29. Caching Strategy
 
 1. **Deterministic Request Hashing**: Sha256 hash of `input + systemPrompt + model + temperature`.
 2. **Strict Multi-Tenant Scoping**: User-specific queries are scoped by `userId`, preventing cross-user cache hits.
-3. **Selective Cache Bypass**: Sensitive financial or private endpoints set `cacheable: false`.
+3. **Selective Cache Bypass**: Sensitive or private endpoints set `cacheable: false`.
 
 ---
 
-## 29. Retry Strategy
+## 30. Retry Strategy
 
 - **BullMQ Exponential Backoff**: Ingestion jobs automatically retry up to 3 times with exponential backoff on transient network or rate limit errors.
 - **Idempotent Ingestion**: Job ID format `rag:{appId}:{tenantId}:{docId}:v{version}` ensures no document version is processed more than once.
 
 ---
 
-## 30. Failure Scenarios & Resilience
+## 31. Failure Scenarios & Resilience
 
 | Scenario | Behavior |
 |---|---|
@@ -702,7 +755,7 @@ The `.github/workflows/ci.yml` pipeline runs on every push and pull request:
 
 ---
 
-## 31. Observability & Telemetry
+## 32. Observability & Telemetry
 
 Every AI execution is recorded in the `ai_executions` collection with:
 - `requestId` (correlation ID)
@@ -717,7 +770,7 @@ Every AI execution is recorded in the `ai_executions` collection with:
 
 ---
 
-## 32. RAG Evaluation Framework
+## 33. RAG Evaluation Framework
 
 Automated benchmark evaluation endpoint: `POST /api/v1/ai/evaluation/run`.
 Evaluates 4 core dimensions on a scale of `0.0` to `1.0`:
@@ -728,15 +781,15 @@ Evaluates 4 core dimensions on a scale of `0.0` to `1.0`:
 
 ---
 
-## 33. Cost Considerations
+## 34. Cost Considerations
 
 - **Gemini 1.5 Flash**: Delivers sub-second latency with low per-token cost.
-- **Redis Semantic Caching**: Eliminates 30-60% of repetitive knowledge queries.
+- **Redis Response Caching**: Bypasses duplicate LLM completions for identical request payloads by serving cached responses directly from Redis with configurable TTL.
 - **Sliding Window History**: Retains the last 8-10 messages plus a summary, bounding conversation token growth.
 
 ---
 
-## 34. Future Improvements
+## 35. Future Improvements
 
 - MongoDB Atlas Vector Search adapter for `VectorStoreFactory`.
 - Hybrid search (BM25 + Dense vector embeddings with reciprocal rank fusion).
