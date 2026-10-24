@@ -11,38 +11,72 @@ import { CACHE_PREFIXES } from '../../common/constants';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
-  private client: Redis;
+  private client: Redis | null = null;
+  private isConnected = false;
 
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit() {
-    const redisUrl = this.configService.get<string>('redis.url') || 'redis://localhost:6379';
-    this.client = new Redis(redisUrl, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: true,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 100, 3000);
-        return delay;
-      },
-    });
+    const redisUrl =
+      this.configService.get<string>('redis.url') || process.env.REDIS_URL;
+    const host = this.configService.get<string>('redis.host', 'localhost');
+    const port = this.configService.get<number>('redis.port', 6379);
+    const password = this.configService.get<string>('redis.password');
+    const db = this.configService.get<number>('redis.db', 0);
 
-    this.client.on('connect', () => {
-      this.logger.log('Connected to Redis successfully');
-    });
+    const retryStrategy = (times: number) => {
+      const delay = Math.min(times * 100, 3000);
+      return delay;
+    };
 
-    this.client.on('error', (err) => {
-      this.logger.error(`Redis connection error: ${err.message}`);
-    });
+    try {
+      if (redisUrl && redisUrl.trim()) {
+        this.client = new Redis(redisUrl.trim(), {
+          maxRetriesPerRequest: null,
+          enableReadyCheck: true,
+          retryStrategy,
+          lazyConnect: false,
+        });
+      } else {
+        this.client = new Redis({
+          host,
+          port,
+          password: password || undefined,
+          db,
+          maxRetriesPerRequest: null,
+          enableReadyCheck: true,
+          retryStrategy,
+        });
+      }
+
+      this.client.on('connect', () => {
+        this.isConnected = true;
+        this.logger.log(
+          redisUrl && redisUrl.trim()
+            ? 'Connected to Redis via connection URL'
+            : `Connected to Redis at ${host}:${port}`,
+        );
+      });
+
+      this.client.on('error', (err) => {
+        this.isConnected = false;
+        this.logger.error(`Redis connection error: ${err.message}`);
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to initialize Redis client: ${err.message}`);
+      this.client = null;
+      this.isConnected = false;
+    }
   }
 
   async onModuleDestroy() {
     if (this.client) {
-      await this.client.quit();
+      await this.client.quit().catch(() => {});
     }
   }
 
   getClient(): Redis {
-    return this.client;
+    return this.client as Redis;
   }
 
   async ping(): Promise<string> {

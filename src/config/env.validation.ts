@@ -58,7 +58,23 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  REDIS_URL: string = 'redis://localhost:6379';
+  REDIS_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  REDIS_HOST?: string = 'localhost';
+
+  @IsNumber()
+  @IsOptional()
+  REDIS_PORT?: number = 6379;
+
+  @IsString()
+  @IsOptional()
+  REDIS_PASSWORD?: string;
+
+  @IsNumber()
+  @IsOptional()
+  REDIS_DB?: number = 0;
 
   @IsString()
   @IsOptional()

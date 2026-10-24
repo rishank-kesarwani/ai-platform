@@ -13,14 +13,47 @@ import { AiProcessor } from './processors/ai.processor';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('redis.url') || 'redis://localhost:6379';
-        const url = new URL(redisUrl);
+        const redisUrl =
+          configService.get<string>('redis.url') || process.env.REDIS_URL;
+        const host = configService.get<string>('redis.host', 'localhost');
+        const port = configService.get<number>('redis.port', 6379);
+        const password = configService.get<string>('redis.password');
+        const db = configService.get<number>('redis.db', 0);
+
+        if (redisUrl && redisUrl.trim()) {
+          try {
+            const parsedUrl = new URL(redisUrl.trim());
+            return {
+              connection: {
+                host: parsedUrl.hostname,
+                port: parseInt(parsedUrl.port || '6379', 10),
+                password: parsedUrl.password || undefined,
+                username: parsedUrl.username || undefined,
+                db:
+                  parsedUrl.pathname && parsedUrl.pathname !== '/'
+                    ? parseInt(parsedUrl.pathname.replace('/', '') || '0', 10)
+                    : undefined,
+                tls: parsedUrl.protocol === 'rediss:' ? {} : undefined,
+                maxRetriesPerRequest: null,
+              },
+            };
+          } catch {
+            return {
+              connection: {
+                url: redisUrl.trim(),
+                maxRetriesPerRequest: null,
+              },
+            };
+          }
+        }
+
         return {
           connection: {
-            host: url.hostname,
-            port: parseInt(url.port || '6379', 10),
-            password: url.password || undefined,
-            username: url.username || undefined,
+            host,
+            port,
+            password: password || undefined,
+            db,
+            maxRetriesPerRequest: null,
           },
         };
       },
